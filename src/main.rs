@@ -4,9 +4,11 @@ extern crate log;
 mod dbus_trait;
 
 use crate::dbus_trait::ProducerProxyAsync;
+use async_std::future::timeout;
 use async_std::stream::StreamExt;
 use async_std::task;
 use std::error::Error;
+use std::time::Duration;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::EnvFilter;
 use zbus::{dbus_interface, ConnectionBuilder};
@@ -68,7 +70,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 .map_err(|e| error!("Cannot listen signal"))
                 .unwrap();
             debug!("stream ok");
-            let _ = stream.next().await.unwrap();
+            if timeout(Duration::from_secs(5), stream.next())
+                .await
+                .is_err()
+            {
+                info!("reproduced");
+                break;
+            };
             error!("Signal received."); // So it is visible
             drop(proxy);
         }
