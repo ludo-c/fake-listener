@@ -6,9 +6,7 @@ mod dbus_trait;
 use crate::dbus_trait::ProducerProxyAsync;
 use async_std::future::timeout;
 use async_std::stream::StreamExt;
-use async_std::task;
 use std::error::Error;
-use std::process;
 use std::time::Duration;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::EnvFilter;
@@ -56,34 +54,31 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .await?;
 
     let dbus_conn_listener = dbus_conn.clone();
-    task::spawn(async move {
-        loop {
-            debug!("new loop");
-            let proxy = ProducerProxyAsync::builder(&dbus_conn_listener)
-                .cache_properties(zbus::CacheProperties::No)
-                .build()
-                .await
-                .unwrap();
-            debug!("proxy ok");
-            let mut stream = proxy
-                .receive_my_signal_event()
-                .await
-                .map_err(|e| error!("Cannot listen signal {}", e))
-                .unwrap();
-            debug!("stream ok");
-            if timeout(Duration::from_secs(5), stream.next())
-                .await
-                .is_err()
-            {
-                info!("reproduced");
-                process::exit(0x0100);
-            };
-            error!("Signal received."); // So it is visible
-            drop(proxy);
-        }
-    });
 
-    loop {}
+    loop {
+        debug!("new loop");
+        let proxy = ProducerProxyAsync::builder(&dbus_conn_listener)
+            .cache_properties(zbus::CacheProperties::No)
+            .build()
+            .await
+            .unwrap();
+        debug!("proxy ok");
+        let mut stream = proxy
+            .receive_my_signal_event()
+            .await
+            .map_err(|e| error!("Cannot listen signal {}", e))
+            .unwrap();
+        debug!("stream ok");
+        if timeout(Duration::from_secs(5), stream.next())
+            .await
+            .is_err()
+        {
+            info!("reproduced");
+            break;
+        };
+        error!("Signal received."); // So it is visible
+        drop(proxy);
+    }
 
     Ok(())
 }
