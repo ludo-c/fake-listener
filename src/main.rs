@@ -8,6 +8,7 @@ use async_std::future::timeout;
 use async_std::stream::StreamExt;
 use async_std::task;
 use std::error::Error;
+use std::process;
 use std::time::Duration;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::EnvFilter;
@@ -67,7 +68,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             let mut stream = proxy
                 .receive_my_signal_event()
                 .await
-                .map_err(|e| error!("Cannot listen signal"))
+                .map_err(|e| error!("Cannot listen signal {}", e))
                 .unwrap();
             debug!("stream ok");
             if timeout(Duration::from_secs(5), stream.next())
@@ -75,7 +76,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 .is_err()
             {
                 info!("reproduced");
-                break;
+                process::exit(0x0100);
             };
             error!("Signal received."); // So it is visible
             drop(proxy);
