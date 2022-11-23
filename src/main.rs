@@ -55,14 +55,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let dbus_conn_listener = dbus_conn.clone();
 
+    let proxy = ProducerProxyAsync::builder(&dbus_conn_listener)
+        .cache_properties(zbus::CacheProperties::No)
+        .build()
+        .await
+        .unwrap();
+    debug!("proxy ok");
+
     loop {
         debug!("new loop");
-        let proxy = ProducerProxyAsync::builder(&dbus_conn_listener)
-            .cache_properties(zbus::CacheProperties::No)
-            .build()
-            .await
-            .unwrap();
-        debug!("proxy ok");
         let mut stream = proxy
             .receive_my_signal_event()
             .await
@@ -77,7 +78,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
             break;
         };
         error!("Signal received."); // So it is visible
-        drop(proxy);
     }
 
     Ok(())
