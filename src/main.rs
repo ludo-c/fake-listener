@@ -4,12 +4,12 @@ extern crate log;
 mod dbus_trait;
 
 use crate::dbus_trait::ProducerProxyAsync;
-use async_std::future::timeout;
-use async_std::stream::StreamExt;
 use std::error::Error;
 use std::time::Duration;
+use tokio::time::timeout;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::EnvFilter;
+use zbus::export::futures_util::stream::StreamExt;
 use zbus::{dbus_interface, ConnectionBuilder};
 
 const BUS_NAME_ADAPTOR: &str = "ludo_ic.daemon.other";
@@ -24,7 +24,7 @@ impl AdaptStruct {
     }
 }
 
-#[async_std::main]
+#[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     env_logger::init();
 
