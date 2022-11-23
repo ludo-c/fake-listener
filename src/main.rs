@@ -53,9 +53,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .build()
         .await?;
 
-    let dbus_conn_listener = dbus_conn.clone();
-
-    let proxy = ProducerProxyAsync::builder(&dbus_conn_listener)
+    let proxy = ProducerProxyAsync::builder(&dbus_conn)
         .cache_properties(zbus::CacheProperties::No)
         .build()
         .await
