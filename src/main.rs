@@ -6,7 +6,7 @@ mod dbus_trait;
 use crate::dbus_trait::ProducerProxyAsync;
 use std::error::Error;
 use std::time::Duration;
-use tokio::time::timeout;
+use tokio::time::{sleep, timeout};
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::EnvFilter;
 use zbus::export::futures_util::stream::StreamExt;
@@ -27,24 +27,25 @@ impl AdaptStruct {
 #[tokio::main(flavor = "multi_thread", worker_threads = 10)]
 async fn main() -> Result<(), Box<dyn Error>> {
     env_logger::init();
-
-    // Activate subscriber for crates logs.
-    tracing_subscriber::FmtSubscriber::builder()
-        .compact()
-        // Display source code file paths
-        .with_file(false)
-        // Display source code line numbers
-        .with_line_number(true)
-        // Display the thread ID an event was recorded on
-        .with_thread_ids(false)
-        // Don't display the event's target (module path)
-        .with_target(false)
-        // Read env variable
-        .with_env_filter(EnvFilter::from_default_env())
-        // Build the subscriber
-        .finish()
-        .init();
-
+    console_subscriber::init();
+    /*
+        // Activate subscriber for crates logs.
+        tracing_subscriber::FmtSubscriber::builder()
+            .compact()
+            // Display source code file paths
+            .with_file(false)
+            // Display source code line numbers
+            .with_line_number(true)
+            // Display the thread ID an event was recorded on
+            .with_thread_ids(false)
+            // Don't display the event's target (module path)
+            .with_target(false)
+            // Read env variable
+            .with_env_filter(EnvFilter::from_default_env())
+            // Build the subscriber
+            .finish()
+            .init();
+    */
     let dbus_adaptor = AdaptStruct {};
 
     let dbus_conn = ConnectionBuilder::session()?
@@ -57,6 +58,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .cache_properties(zbus::CacheProperties::No)
         .build()
         .await
+        .map_err(|e| error!("Cannot create proxy {}", e))
         .unwrap();
     debug!("proxy ok");
 
@@ -68,7 +70,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .map_err(|e| error!("Cannot listen signal {}", e))
             .unwrap();
         debug!("stream ok");
-        if timeout(Duration::from_secs(5), stream.next())
+        if timeout(Duration::from_secs(999999), stream.next())
             .await
             .is_err()
         {
